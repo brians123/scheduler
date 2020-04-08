@@ -1,13 +1,67 @@
 import React from 'react';
-//import './App.css';
 
 const schedule = {
-  title: "CS Courses for 2018-2019"
+  "title": "CS Courses for 2018-2019",
+  "courses": [
+    {
+      "id": "F101",
+      "title": "Computer Science: Concepts, Philosophy, and Connections",
+      "meets": "MWF 11:00-11:50"
+    },
+    {
+      "id": "F110",
+      "title": "Intro Programming for non-majors",
+      "meets": "MWF 10:00-10:50"
+    },
+    {
+      "id": "F111",
+      "title": "Fundamentals of Computer Programming I",
+      "meets": "MWF 13:00-13:50"
+    },
+    {
+      "id": "F211",
+      "title": "Fundamentals of Computer Programming II",
+      "meets": "TuTh 12:30-13:50"
+    }
+  ]
 };
+
+// Banner component to display title
+// destructuring syntax to get values we want from an object 
+const Banner = ({title}) => (
+  <h1>{title }</h1>
+)
+
+// CourseList component to map every course in courses object into its own HTML component
+const CourseList = ({courses}) => (
+  <div>
+    { courses.map(course => <Course key={course.id} course={course}/>)}
+  </div>
+)
+
+const terms = { F: 'Fall', W: 'Winter', S: 'Spring'};
+
+// getting the first character of the course in course objects
+const getCourseTerm = course => (
+  terms[course.id.charAt(0)]
+);
+
+// getting the course number of the course in course objects
+const getCourseNumber = course => (
+  course.id.slice(1,4)
+);
+
+const Course = ({ course }) => (
+  <button>
+    { getCourseTerm(course) } CS { getCourseNumber(course) } : { course.title }
+  </button>
+)
+
 
 const App = () => (
   <div>
-    <h1>{schedule.title}</h1>
+    <Banner title={schedule.title}/>
+    <CourseList courses={ schedule.courses }/>
   </div>
 );
 
