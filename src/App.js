@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import 'rbx/index.css';
-import { Button, Container, Title } from 'rbx';
+import { Button, Container, Title, Message } from 'rbx';
 import firebase from 'firebase/app';
 import 'firebase/database';
+import 'firebase/auth';
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 
+const uiConfig = {
+  signInFlow: 'popup',
+  signInOptions: [
+    firebase.auth.GoogleAuthProvider.PROVIDER_ID
+  ],
+  callbacks: {
+    signInSuccessWithAuthResult: () => false
+  }
+};
 
-var firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyCXzNc4f9DvScnzJ3WqZ2Cz8r7NcsRp45k",
   authDomain: "scheduler-6b372.firebaseapp.com",
   databaseURL: "https://scheduler-6b372.firebaseio.com",
@@ -20,9 +31,31 @@ const db = firebase.database().ref();
 
 // Banner component to display title
 // destructuring syntax to get values we want from an object 
-const Banner = ({title}) => (
-  <Title>{title || '[loading...]' }</Title>
+const Banner = ({ user, title }) => (
+  <React.Fragment>
+    { user ? <Welcome user={ user } /> : <SignIn /> }
+    <Title>{title || '[loading...]' }</Title>
+  </React.Fragment>
 )
+
+const Welcome = ({ user }) => (
+  <Message color="info">
+    <Message.Header>
+      Welcome, {user.displayName}
+      <Button primary onClick={() => firebase.auth().signOut()}>
+        Log out
+      </Button>
+    </Message.Header>
+  </Message>
+);
+
+const SignIn = () => (
+  <StyledFirebaseAuth
+    uiConfig={uiConfig}
+    firebaseAuth={firebase.auth()}
+  />
+);
+
 
 const buttonColor = selected => (
   // color is set to success green if it is selected
@@ -111,10 +144,10 @@ const addScheduleTimes = schedule => ({
   courses: Object.values(schedule.courses).map(addCourseTimes)
 });
 
-const Course = ({ course, state }) => (
+const Course = ({ course, state, user }) => (
   <Button color={ buttonColor(state.selected.includes(course)) }
     onClick={ () => state.toggle(course) }
-    onDoubleClick = { ()=>moveCourse(course) }
+    onDoubleClick = { user ? () => moveCourse(course) : null }
     disabled={ hasConflict(course, state.selected )}>
     { getCourseTerm(course) } CS { getCourseNumber(course) } : { course.title }
   </Button>
@@ -154,7 +187,8 @@ const courseConflict = (course1, course2) => (
 
 const App = () => {
   const [schedule, setSchedule] = useState({ title: '', courses: [] });
-  const url = 'https://courses.cs.northwestern.edu/394/data/cs-courses.php';
+  const [user, setUser] = useState(null);
+  //const url = 'https://courses.cs.northwestern.edu/394/data/cs-courses.php';
   
   // calling useEffect(function) inside a component runs code in function in a controlled way
   // passing in an empty list as an argument runs the funciton in useEffect only when the component is first added 
@@ -164,6 +198,10 @@ const App = () => {
     }
     db.on('value', handleData, error => alert(error));
     return () => {db.off('value', handleData); };
+  }, []);
+
+  useEffect(() => {
+    firebase.auth().onAuthStateChanged(setUser);
   }, []);
 
   return(
