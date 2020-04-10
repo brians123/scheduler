@@ -1,22 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import 'rbx/index.css';
 import { Button, Container, Title } from 'rbx';
-import firebase from 'firebase/app';
-import 'firebase/database';
-
-
-var firebaseConfig = {
-  apiKey: "AIzaSyCXzNc4f9DvScnzJ3WqZ2Cz8r7NcsRp45k",
-  authDomain: "scheduler-6b372.firebaseapp.com",
-  databaseURL: "https://scheduler-6b372.firebaseio.com",
-  projectId: "scheduler-6b372",
-  storageBucket: "scheduler-6b372.appspot.com",
-  messagingSenderId: "333316857982",
-  appId: "1:333316857982:web:227ddad5f5f7b10ee7782f",
-  measurementId: "G-GLWHKRKCCM"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database().ref();
 
 // Banner component to display title
 // destructuring syntax to get values we want from an object 
@@ -108,30 +92,16 @@ const addCourseTimes = course => ({
 
 const addScheduleTimes = schedule => ({
   title: schedule.title,
-  courses: Object.values(schedule.courses).map(addCourseTimes)
+  courses: schedule.courses.map(addCourseTimes)
 });
 
 const Course = ({ course, state }) => (
   <Button color={ buttonColor(state.selected.includes(course)) }
     onClick={ () => state.toggle(course) }
-    onDoubleClick = { ()=>moveCourse(course) }
     disabled={ hasConflict(course, state.selected )}>
     { getCourseTerm(course) } CS { getCourseNumber(course) } : { course.title }
   </Button>
 )
-
-const moveCourse = course => {
-  const meets = prompt('Enter new meetin data, in this format:', course.meets);
-  if (!meets) return;
-  const {days} =timeParts(meets);
-  if (days) saveCourse(course, meets);
-  else moveCourse(course);
-}
-
-const saveCourse = (course, meets)=>{
-  db.child('courses').child(course.id).update({meets})
-    .catch(error => alert(error));
-}
 
 const daysOverlap = (days1, days2) => (
   days.some(day => days1.includes(day) && days2.includes(day))
@@ -159,11 +129,13 @@ const App = () => {
   // calling useEffect(function) inside a component runs code in function in a controlled way
   // passing in an empty list as an argument runs the funciton in useEffect only when the component is first added 
   useEffect( ()=>{
-    const handleData = snap => {
-      if (snap.val()) setSchedule(addScheduleTimes(snap.val()));
+    const fetchSchedule = async () => {
+      const response = await fetch(url);
+      if (!response.ok) throw response; 
+      const json = await response.json();
+      setSchedule(addScheduleTimes(json));
     }
-    db.on('value', handleData, error => alert(error));
-    return () => {db.off('value', handleData); };
+    fetchSchedule();
   }, []);
 
   return(
